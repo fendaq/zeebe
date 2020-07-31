@@ -7,6 +7,11 @@ zeebe:
 	-kubectl apply -f curator-cronjob.yaml
 	-kubectl apply -f curator-configmap.yaml
 
+ 
+.PHONY: zeebe-template
+zeebe-template:
+	-helm template default zeebe/zeebe-cluster -f zeebe-values.yaml --skip-crds --output-dir .
+
 .PHONY: update
 update:
 	-helm upgrade default zeebe/zeebe-cluster -f zeebe-values.yaml
