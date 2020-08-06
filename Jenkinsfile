@@ -1,6 +1,6 @@
 // vim: set filetype=groovy:
 
-@Library(["camunda-ci", "zeebe-jenkins-shared-library"]) _
+@Library(["camunda-ci", "zeebe-jenkins-shared-library@feature-flaky-test-extractor"]) _
 
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
@@ -148,7 +148,7 @@ pipeline {
                                def testReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml")
 
                                testReports.each {
-                                  extractFlakyTestReport(it);
+                                  flakyTestExtractor.extractFlakyTestReport(it);
 
                                   def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
@@ -182,7 +182,7 @@ pipeline {
                                def testReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml")
 
                                testReports.each {
-                                  extractFlakyTestReport(it);
+                                  flakyTestExtractor.extractFlakyTestReport(it);
 
                                   def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
@@ -217,7 +217,7 @@ pipeline {
                                def testReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml")
 
                                testReports.each {
-                                  extractFlakyTestReport(it);
+                                  flakyTestExtractor.extractFlakyTestReport(it);
 
                                   def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
@@ -330,106 +330,4 @@ pipeline {
             }
         }
     }
-}
-
-void extractFlakyTestReport(file) {
-    def inputFile = file.path
-    println("Processing: ${inputFile}");
-
-    def input = readFile(inputFile)
-
-    def doc = parseXML(input);
-
-    if (hasFlakyTests(doc)) {
-        def output = inputFile.substring(0, inputFile.lastIndexOf('.')) + "-FLAKY.xml"
-        println("Generating: ${output}");
-
-        writeFile( file: output, text: transformTestReport(doc))
-    } else {
-        println("Skipping, because it does not contain flaky tests")
-    }
-}
-
-@NonCPS
-groovy.util.Node parseXML(input) {
-    def parser = new XmlParser()
-    return parser.parseText(input);
-}
-
-@NonCPS
-String transformTestReport(doc) {
-    modifyTestReport(doc)
-
-    def stringWriter = new StringWriter()
-    def nodePrinter = new XmlNodePrinter(new PrintWriter(stringWriter))
-    nodePrinter.setPreserveWhitespace(true)
-    nodePrinter.print(doc)
-
-    return stringWriter.toString()
-}
-
-@NonCPS
-boolean hasFlakyTests(root) {
-    def result = false;
-    root['testcase'].each {
-        if (isFlakyTest(it)) {
-            result = true;
-        }
-    }
-    return result;
-}
-
-@NonCPS
-boolean isFlakyTest(testcase) {
-    return !testcase['flakyFailure'].isEmpty()
-}
-
-@NonCPS
-void modifyTestReport(root) {
-    appendFlakyToName(root)
-    pruneNonFlakyTests(root)
-    elevateFlakyTests(root)
-    adjustTestCount(root)
-}
-
-@NonCPS
-void appendFlakyToName(root) {
-    def newName = root['@name'] + " (Flaky Test)";
-    root['@name'] = newName;
-}
-
-@NonCPS
-void pruneNonFlakyTests(root) {
-    root['testcase']
-            .findAll { !isFlakyTest(it) }
-            .each { root.remove(it) }
-}
-
-@NonCPS
-void elevateFlakyTests(root) {
-    root['testcase']
-            .findAll { isFlakyTest(it) }
-            .each { elevateFlakyFailure(it) }
-}
-
-@NonCPS
-void elevateFlakyFailure(testcase) {
-    appendFlakyToName(testcase)
-
-    def flakyFailure = testcase['flakyFailure'][0]
-
-    def failure = new NodeBuilder().failure(message: flakyFailure['@message'], type: flakyFailure['@type'], flakyFailure['stackTrace'].text())
-
-    testcase.append(failure);
-    testcase.append(flakyFailure['system-out'][0])
-
-    testcase['flakyFailure'].each { testcase.remove(it)}
-}
-
-@NonCPS
-void adjustTestCount(root) {
-    def testcaseCount = root['testcase'].size();
-
-    root['@tests'] = testcaseCount
-    root['@failures'] = testcaseCount
 }
