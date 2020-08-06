@@ -152,7 +152,7 @@ pipeline {
 
                                   def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
-                                  if (!flakyTestReports.isEmpty()) {
+                                  if (flakyTestReports.length > 0) {
                                     junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
                                   }
                                }
@@ -186,7 +186,7 @@ pipeline {
 
                                   def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
-                                  if (!flakyTestReports.isEmpty()) {
+                                  if (flakyTestReports.length > 0 ) {
                                     junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
                                   }
                                }
@@ -221,7 +221,7 @@ pipeline {
 
                                   def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
-                                  if (!flakyTestReports.isEmpty()) {
+                                  if (flakyTestReports.length > 0) {
                                     junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
                                   }
                                }
