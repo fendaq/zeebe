@@ -149,12 +149,12 @@ pipeline {
 
                                testReports.each {
                                   flakyTestExtractor.extractFlakyTestReport(it);
+                               }
 
-                                  def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
+                               def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
-                                  if (flakyTestReports.length > 0) {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
-                                  }
+                               if (flakyTestReports.length > 0) {
+                                  junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
                                }
                             }
 
@@ -184,11 +184,12 @@ pipeline {
                                testReports.each {
                                   flakyTestExtractor.extractFlakyTestReport(it);
 
-                                  def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
+                               }
 
-                                  if (flakyTestReports.length > 0 ) {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
-                                  }
+                               def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
+
+                               if (flakyTestReports.length > 0 ) {
+                                 junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
                                }
                             }
 
@@ -218,12 +219,11 @@ pipeline {
 
                                testReports.each {
                                   flakyTestExtractor.extractFlakyTestReport(it);
+                               }
+                               def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
 
-                                  def flakyTestReports = findFiles(glob: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml")
-
-                                  if (flakyTestReports.length > 0) {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
-                                  }
+                               if (flakyTestReports.length > 0) {
+                                junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true
                                }
                             }
 
