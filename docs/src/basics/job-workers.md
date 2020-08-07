@@ -64,17 +64,19 @@ Zeebe decouples creation of jobs from performing the work on them. It is always 
 This allows the broker to handle bursts of traffic and effectively act as a _buffer_ in front of the job workers.
 
 ## Completing and Failing Jobs
-After working on an activated job, a job worker should send a complete or fail message to the
-broker. If the job is not completed within the configured job activation timeout then the broker
-will make the job available again to other job workers.
+After working on an activated job, a job worker can inform the broker that the job has either been
+completed or failed. If the job worker could successfully complete its work, it can inform the
+broker of this success by sending a complete job command. If the job could not be completed within
+the configured job activation timeout, then the broker will make the job available again to other
+job workers.
 
-In order to expose the results of the job, the job worker can pass variables with the complete command. These variables will be merged into the workflow instance depending on the output variable mapping. 
-Note that this may overwrite existing variables and can lead to race conditions in
-parallel flows. We recommend completing jobs with only those variables that need to be
-changed.
+In order to expose the results of the job, the job worker can pass variables with the complete job
+command. These variables will be merged into the workflow instance depending on the output variable
+mapping. Note that this may overwrite existing variables and can lead to race conditions in
+parallel flows. We recommend completing jobs with only those variables that need to be changed.
 
 If the job worker could not successfully complete its work, it can inform the broker of this failure
-by sending a fail job message. Fail job messages can be sent including a retries number. If this is
-a positive number then the job will be immediately activatable again, and a worker could try to
-process it again. If it is zero or negative however, an incident will be raised and the job will not
-be activatable until the incident is resolved.
+by sending a fail job command. Fail job messages include a retries number. If this is a positive
+number then the job will be immediately activatable again, and a worker could try to process it
+again. If it is zero or negative however, an incident will be raised and the job will not be
+activatable until the incident is resolved.
