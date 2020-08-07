@@ -63,7 +63,9 @@ An incident represents an error condition which prevents Zeebe from advancing an
 * [Incident](reference/incidents.md)
 
 ### Job
-A job represents a distinct unit of work within a business process. Jobs are represented by service tasks in your workflow and are identified by a unique name and type.
+A job represents a distinct unit of work within a business process. Service tasks represent such
+ jobs in your workflow and are identified by a unique id. A job has a type to allow specific job
+ workers to find jobs that they can work on.
 
 * [Job Workers](basics/job-workers.md#what-is-a-job)
 
@@ -133,7 +135,10 @@ A worker executes a job.  In the Zeebe nomenclature, these are also referred to 
 * [Job Workers](basics/job-workers.md)
 
 ### Workflow
-A workflow is a defined sequence of distinct steps representing your business logic.  Examples of a workflow could be an e-commerce shopping experience, onboarding a new employee, etc.  In Zeebe, workflows are identified by a unique name and BPMN process id.  The workflow is usually also referred to as the BPMN model.
+A workflow is a defined sequence of distinct steps representing your business logic. Examples of a
+ workflow could be an e-commerce shopping experience, onboarding a new employee, etc. In Zeebe,
+ workflows are identified by a unique process id. The workflow is usually also referred to as the
+ BPMN model.
 
 * [Workflows](basics/workflows.md)
 
