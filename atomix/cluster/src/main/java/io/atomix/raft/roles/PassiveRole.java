@@ -189,16 +189,7 @@ public class PassiveRole extends InactiveRole {
                   .build()));
     }
 
-    SnapshotChunk snapshotChunk;
-    try {
-      final var snapshotChunkImpl = new SnapshotChunkImpl();
-      snapshotChunkImpl.wrap(new UnsafeBuffer(request.data()), 0, request.data().capacity());
-      snapshotChunk = snapshotChunkImpl;
-    } catch (final RuntimeException e) {
-      // fallback to 0.23.x expected, where request.data is literally the chunk data
-      snapshotChunk = SnapshotChunkUtil.fromOldInstallRequest(request);
-    }
-
+    final SnapshotChunk snapshotChunk = decodeSnapshotChunk(request);
     log.debug("Installing snapshot chunk {}", snapshotChunk);
 
     // If there is no pending snapshot, create a new snapshot.
@@ -396,6 +387,18 @@ public class PassiveRole extends InactiveRole {
                 .withError(
                     RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot request vote from RESERVE member")
                 .build()));
+  }
+
+  private SnapshotChunk decodeSnapshotChunk(final InstallRequest request) {
+    try {
+      final var snapshotChunkImpl = new SnapshotChunkImpl();
+      snapshotChunkImpl.wrap(new UnsafeBuffer(request.data()), 0, request.data().capacity());
+      return snapshotChunkImpl;
+    } catch (final RuntimeException e) {
+      // fallback for requests sent from pre 0.24.x brokers, where request.data() is the chunk
+      // contents; please remove once we do not support versions below 0.24.x
+      return SnapshotChunkUtil.fromOldInstallRequest(request);
+    }
   }
 
   private void abortPendingSnapshots() {

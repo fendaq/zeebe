@@ -26,10 +26,16 @@ public final class SnapshotChunkUtil {
   }
 
   /**
-   * Returns a new snapshot chunk from a pre 0.24.x install request
+   * Returns a new snapshot chunk from a pre 0.24.x install request. Should be removed once no
+   * versions below 0.24.x are supported.
    *
-   * @param request
-   * @return
+   * <p>The snapshot chunk will take most of its information from the install request, and use the
+   * data as the chunk content, while setting the total count to {@link Integer#MIN_VALUE} and the
+   * snapshot checksum to {@link Long#MIN_VALUE} so that neither will be validated against. See
+   * {@link FileBasedReceivedSnapshot} for more on that.
+   *
+   * @param request the install request to build from
+   * @return a valid {@link SnapshotChunk} built from the request
    */
   public static SnapshotChunk fromOldInstallRequest(final InstallRequest request) {
     final var metadata =
