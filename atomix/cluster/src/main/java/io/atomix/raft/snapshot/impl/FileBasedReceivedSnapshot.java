@@ -192,27 +192,29 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     final var files = directory.toFile().listFiles();
     Objects.requireNonNull(files, "No chunks have been applied yet");
 
-    if (files.length != expectedTotalCount) {
+    if (expectedTotalCount != Integer.MIN_VALUE && files.length != expectedTotalCount) {
       throw new IllegalStateException(
           String.format(
               "Expected '%d' chunk files for this snapshot, but found '%d'. Files are: %s.",
               expectedSnapshotChecksum, files.length, Arrays.toString(files)));
     }
 
-    final var filePaths =
-        Arrays.stream(files).sorted().map(File::toPath).collect(Collectors.toList());
-    final long actualSnapshotChecksum;
-    try {
-      actualSnapshotChecksum = ChecksumUtil.createCombinedChecksum(filePaths);
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Unexpected exception on calculating snapshot checksum.", e);
-    }
+    if (expectedSnapshotChecksum != Long.MIN_VALUE) {
+      final var filePaths =
+          Arrays.stream(files).sorted().map(File::toPath).collect(Collectors.toList());
+      final long actualSnapshotChecksum;
+      try {
+        actualSnapshotChecksum = ChecksumUtil.createCombinedChecksum(filePaths);
+      } catch (final IOException e) {
+        throw new UncheckedIOException("Unexpected exception on calculating snapshot checksum.", e);
+      }
 
-    if (actualSnapshotChecksum != expectedSnapshotChecksum) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected snapshot checksum %d, but calculated %d.",
-              expectedSnapshotChecksum, actualSnapshotChecksum));
+      if (actualSnapshotChecksum != expectedSnapshotChecksum) {
+        throw new IllegalStateException(
+            String.format(
+                "Expected snapshot checksum %d, but calculated %d.",
+                expectedSnapshotChecksum, actualSnapshotChecksum));
+      }
     }
 
     return snapshotStore.newSnapshot(metadata, directory);

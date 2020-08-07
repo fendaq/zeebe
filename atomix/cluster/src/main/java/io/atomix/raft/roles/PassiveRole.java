@@ -38,7 +38,9 @@ import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.snapshot.PersistedSnapshot;
 import io.atomix.raft.snapshot.PersistedSnapshotListener;
 import io.atomix.raft.snapshot.ReceivedSnapshot;
+import io.atomix.raft.snapshot.SnapshotChunk;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
+import io.atomix.raft.snapshot.impl.SnapshotChunkUtil;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -164,14 +166,16 @@ public class PassiveRole extends InactiveRole {
     // If the snapshot already exists locally, do not overwrite it with a replicated snapshot.
     // Simply reply to the
     // request successfully.
-    final var optLatestSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
-    if (optLatestSnapshot.isPresent()) {
-      if (optLatestSnapshot.get().getIndex() >= request.index()) {
-        abortPendingSnapshots();
+    final var latestSnapshotIndex =
+        raft.getPersistedSnapshotStore()
+            .getLatestSnapshot()
+            .map(PersistedSnapshot::getIndex)
+            .orElse(Long.MIN_VALUE);
+    if (latestSnapshotIndex >= request.index()) {
+      abortPendingSnapshots();
 
-        return CompletableFuture.completedFuture(
-            logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
-      }
+      return CompletableFuture.completedFuture(
+          logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
     }
 
     if (!request.complete() && request.nextChunkId() == null) {
@@ -185,8 +189,17 @@ public class PassiveRole extends InactiveRole {
                   .build()));
     }
 
-    final var snapshotChunk = new SnapshotChunkImpl();
-    snapshotChunk.wrap(new UnsafeBuffer(request.data()), 0, request.data().capacity());
+    SnapshotChunk snapshotChunk;
+    try {
+      final var snapshotChunkImpl = new SnapshotChunkImpl();
+      snapshotChunkImpl.wrap(new UnsafeBuffer(request.data()), 0, request.data().capacity());
+      snapshotChunk = snapshotChunkImpl;
+    } catch (final RuntimeException e) {
+      // fallback to 0.23.x expected, where request.data is literally the chunk data
+      snapshotChunk = SnapshotChunkUtil.fromOldInstallRequest(request);
+    }
+
+    log.debug("Installing snapshot chunk {}", snapshotChunk);
 
     // If there is no pending snapshot, create a new snapshot.
     if (pendingSnapshot == null) {
@@ -221,7 +234,7 @@ public class PassiveRole extends InactiveRole {
                     .withStatus(RaftResponse.Status.ERROR)
                     .withError(
                         RaftError.Type.ILLEGAL_MEMBER_STATE,
-                        "Request chunk is was received out of order")
+                        "Request chunk was received out of order")
                     .build()));
       }
     }
