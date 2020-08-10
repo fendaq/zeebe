@@ -7,15 +7,13 @@
  */
 package io.atomix.raft.snapshot.impl;
 
-import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.snapshot.SnapshotChunk;
-import io.atomix.utils.time.WallClockTimestamp;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.zip.CRC32;
 
-public final class SnapshotChunkUtil {
+final class SnapshotChunkUtil {
 
   private SnapshotChunkUtil() {}
 
@@ -23,36 +21,6 @@ public final class SnapshotChunkUtil {
     final CRC32 crc32 = new CRC32();
     crc32.update(content);
     return crc32.getValue();
-  }
-
-  /**
-   * Returns a new snapshot chunk from a pre 0.24.x install request. Should be removed once no
-   * versions below 0.24.x are supported.
-   *
-   * <p>The snapshot chunk will take most of its information from the install request, and use the
-   * data as the chunk content, while setting the total count to {@link Integer#MIN_VALUE} and the
-   * snapshot checksum to {@link Long#MIN_VALUE} so that neither will be validated against. See
-   * {@link FileBasedReceivedSnapshot} for more on that.
-   *
-   * @param request the install request to build from
-   * @return a valid {@link SnapshotChunk} built from the request
-   */
-  public static SnapshotChunk fromOldInstallRequest(final InstallRequest request) {
-    final var metadata =
-        new FileBasedSnapshotMetadata(
-            request.index(), request.currentTerm(), WallClockTimestamp.from(request.timestamp()));
-    final var chunkName = new byte[request.chunkId().remaining()];
-    final var content = new byte[request.data().remaining()];
-    request.data().asReadOnlyBuffer().get(content);
-    request.chunkId().asReadOnlyBuffer().get(chunkName);
-
-    return new SnapshotChunkImpl(
-        metadata.getSnapshotIdAsString(),
-        Integer.MIN_VALUE,
-        new String(chunkName),
-        createChecksum(content),
-        content,
-        Long.MIN_VALUE);
   }
 
   static SnapshotChunk createSnapshotChunkFromFile(

@@ -39,8 +39,8 @@ import io.atomix.raft.snapshot.PersistedSnapshot;
 import io.atomix.raft.snapshot.PersistedSnapshotListener;
 import io.atomix.raft.snapshot.ReceivedSnapshot;
 import io.atomix.raft.snapshot.SnapshotChunk;
+import io.atomix.raft.snapshot.impl.LegacySnapshotChunk;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
-import io.atomix.raft.snapshot.impl.SnapshotChunkUtil;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -397,7 +397,7 @@ public class PassiveRole extends InactiveRole {
     } catch (final RuntimeException e) {
       // fallback for requests sent from pre 0.24.x brokers, where request.data() is the chunk
       // contents; please remove once we do not support versions below 0.24.x
-      return SnapshotChunkUtil.fromOldInstallRequest(request);
+      return LegacySnapshotChunk.ofInstallRequest(request);
     }
   }
 

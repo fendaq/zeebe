@@ -38,7 +38,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
-
+  static final int TOTAL_COUNT_NULL_VALUE = SnapshotChunkDecoder.totalCountNullValue();
+  static final long SNAPSHOT_CHECKSUM_NULL_VALUE = SnapshotChunkDecoder.snapshotChecksumNullValue();
   private static final Logger LOGGER = new ZbLogger(FileBasedReceivedSnapshot.class);
   private static final boolean FAILED = false;
   private static final boolean SUCCESS = true;
@@ -58,8 +59,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     this.metadata = metadata;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
-    this.expectedSnapshotChecksum = Long.MIN_VALUE;
-    this.expectedTotalCount = Integer.MIN_VALUE;
+    this.expectedSnapshotChecksum = SNAPSHOT_CHECKSUM_NULL_VALUE;
+    this.expectedTotalCount = TOTAL_COUNT_NULL_VALUE;
   }
 
   @Override
@@ -79,6 +80,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     return expectedId.equals(chunkId);
+  }
+
+  @Override
+  public void setNextExpected(final ByteBuffer nextChunkId) {
+    expectedId = nextChunkId;
   }
 
   @Override
@@ -136,7 +142,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private boolean isSnapshotChecksumInvalid(final long currentSnapshotChecksum) {
-    if (expectedSnapshotChecksum == Long.MIN_VALUE) {
+    if (expectedSnapshotChecksum == SNAPSHOT_CHECKSUM_NULL_VALUE) {
       this.expectedSnapshotChecksum = currentSnapshotChecksum;
     }
 
@@ -151,7 +157,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private boolean isTotalCountInvalid(final int currentTotalCount) {
-    if (expectedTotalCount == Integer.MIN_VALUE) {
+    if (expectedTotalCount == TOTAL_COUNT_NULL_VALUE) {
       this.expectedTotalCount = currentTotalCount;
     }
 
@@ -178,8 +184,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public void setNextExpected(final ByteBuffer nextChunkId) {
-    expectedId = nextChunkId;
+  public void abort() {
+    try {
+      LOGGER.debug("DELETE dir {}", directory);
+      FileUtil.deleteFolder(directory);
+    } catch (final NoSuchFileException nsfe) {
+      LOGGER.debug(
+          "Tried to delete pending dir {}, but doesn't exist. Either was already removed or no chunk was applied until now.",
+          directory,
+          nsfe);
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete pending snapshot {}", this, e);
+    }
   }
 
   @Override
@@ -192,14 +208,14 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     final var files = directory.toFile().listFiles();
     Objects.requireNonNull(files, "No chunks have been applied yet");
 
-    if (expectedTotalCount != Integer.MIN_VALUE && files.length != expectedTotalCount) {
+    if (expectedTotalCount != TOTAL_COUNT_NULL_VALUE && files.length != expectedTotalCount) {
       throw new IllegalStateException(
           String.format(
               "Expected '%d' chunk files for this snapshot, but found '%d'. Files are: %s.",
               expectedSnapshotChecksum, files.length, Arrays.toString(files)));
     }
 
-    if (expectedSnapshotChecksum != Long.MIN_VALUE) {
+    if (expectedSnapshotChecksum != SNAPSHOT_CHECKSUM_NULL_VALUE) {
       final var filePaths =
           Arrays.stream(files).sorted().map(File::toPath).collect(Collectors.toList());
       final long actualSnapshotChecksum;
@@ -218,21 +234,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     return snapshotStore.newSnapshot(metadata, directory);
-  }
-
-  @Override
-  public void abort() {
-    try {
-      LOGGER.debug("DELETE dir {}", directory);
-      FileUtil.deleteFolder(directory);
-    } catch (final NoSuchFileException nsfe) {
-      LOGGER.debug(
-          "Tried to delete pending dir {}, but doesn't exist. Either was already removed or no chunk was applied until now.",
-          directory,
-          nsfe);
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to delete pending snapshot {}", this, e);
-    }
   }
 
   public Path getPath() {
