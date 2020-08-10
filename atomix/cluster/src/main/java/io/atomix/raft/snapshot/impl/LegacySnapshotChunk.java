@@ -19,6 +19,8 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.snapshot.SnapshotChunk;
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
+import java.util.Objects;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -81,5 +83,40 @@ public final class LegacySnapshotChunk implements SnapshotChunk {
   @Override
   public long getSnapshotChecksum() {
     return FileBasedReceivedSnapshot.SNAPSHOT_CHECKSUM_NULL_VALUE;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final LegacySnapshotChunk that = (LegacySnapshotChunk) o;
+    return getChecksum() == that.getChecksum()
+        && Objects.equals(metadata, that.metadata)
+        && Objects.equals(chunkId, that.chunkId)
+        && Arrays.equals(getContent(), that.getContent());
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(metadata, chunkId, getChecksum());
+    result = 31 * result + Arrays.hashCode(getContent());
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "LegacySnapshotChunk{"
+        + "metadata="
+        + metadata
+        + ", chunkId='"
+        + chunkId
+        + '\''
+        + ", checksum="
+        + checksum
+        + '}';
   }
 }

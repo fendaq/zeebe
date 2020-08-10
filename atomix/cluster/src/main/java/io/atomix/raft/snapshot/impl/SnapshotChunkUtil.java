@@ -88,23 +88,5 @@ final class SnapshotChunkUtil {
     public long getSnapshotChecksum() {
       return snapshotChecksum;
     }
-
-    @Override
-    public String toString() {
-      return "SnapshotChunkImpl{"
-          + "snapshotId='"
-          + snapshotId
-          + '\''
-          + ", totalCount="
-          + totalCount
-          + ", chunkName='"
-          + chunkName
-          + '\''
-          + ", snapshotChecksum="
-          + snapshotChecksum
-          + ", checksum="
-          + checksum
-          + '}';
-    }
   }
 }
